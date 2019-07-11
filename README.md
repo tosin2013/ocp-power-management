@@ -2,7 +2,7 @@ OpenShift Power Management Role - WIP
 =========
 
 Reboot or shutdown a Red Hat OpenShift Container Platform Cluster  
-Based on: ]How To: Stop and start a production OpenShift Cluster](https://servicesblog.redhat.com/2019/05/29/how-to-stop-and-start-a-production-openshift-cluster/)
+Based on: [How To: Stop and start a production OpenShift Cluster](https://servicesblog.redhat.com/2019/05/29/how-to-stop-and-start-a-production-openshift-cluster/)
 
 Requirements
 ------------
