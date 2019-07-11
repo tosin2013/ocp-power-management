@@ -1,0 +1,33 @@
+# Setting the node to NOT schedulable draining the node then restarting
+- name: Setting the {{ node_name }} to NOT schedulable
+  shell: |
+    oc adm manage-node "{{ node_name }}" --schedulable=false
+- name:  
+    shell: |
+      oc adm drain "{{ node_name }}"
+- name: reboot {{ node_name }}"
+  shell: sleep 2 && shutdown -r now "Restarting node"
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  when:
+    - {{ power_state }} == "reboot"
+- name: Wait 60 seconds, but only start checking after 30 seconds
+  wait_for_connection:
+    delay: 30
+    timeout: 60
+  when:
+    - {{ power_state }} == "reboot"
+- name: reboot "{{ node_name }}"
+  shell: sleep 2 && halt "Shutting Down Node"
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  when:
+    - {{ power_state }} == "halt"
+- name: Powering off node 
+  shell: virsh shutdown {{ node_name }}
+  become: yes
+  delegate_to: localhost

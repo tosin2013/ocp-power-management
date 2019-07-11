@@ -1,0 +1,5 @@
+---
+# defaults file for ocp-power-management
+power: "{{ power_state }}"
+node: "{{ node_name }}"
+rhel_user: "{{ rhel_user }}"
