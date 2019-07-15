@@ -1,0 +1,42 @@
+# Setting the node to NOT schedulable draining the node then restarting
+- name: get variables
+  debug: var=node_names
+
+- name: Setting {{ item }} to unschedulable
+  block:
+  - name: Setting the {{ item }} to NOT schedulable
+    shell: |
+      echo "NODE: {{ item }}"
+      oc adm manage-node "{{ item }}" --schedulable=false
+    with_items:
+      - "{{ fqdn_compute_names }}"
+  - name:  Drain Containers running on node
+    shell: |
+      oc adm drain "{{ item }}" --grace-period=180 --timeout=0 --delete-local-data --ignore-daemonsets
+    ignore_errors: no
+    with_items:
+      - "{{ fqdn_compute_names }}"
+  rescue:
+    - debug:
+        msg: 'I caught an error, can do stuff here to fix it, :-)'
+- name: Shutdown "{{ item }}"
+  block:
+  - name: Shuting down  {{ item }}
+    shell: sleep 2 && halt "Shutting Down Node"
+    async: 1
+    poll: 0
+    ignore_errors: true
+    become: true
+    when:
+      -  power_state == "halt"
+    delegate_to: "{{ item }}"
+    with_items:
+      - "{{ node_names }}"
+  - name: Powering off node
+    shell: virsh shutdown {{ item }}
+    become: yes
+    delegate_to:  localhost
+    when:
+      -  power_state == "halt"
+    with_items:
+      - "{{ node_names }}"
