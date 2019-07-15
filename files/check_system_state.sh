@@ -1,6 +1,67 @@
 #!/bin/bash
 
-source infrastructure_functions.sh
+function checkinfrahealth() {
+  #oc get pods --all-namespaces
+  case $1 in
+
+  logging)
+    SEARCHSTRING="logging"
+    TEXTRESPONSE="OpenShift Logging"
+    ;;
+
+  openshift-monitoring)
+    SEARCHSTRING="openshift-monitoring"
+    TEXTRESPONSE="OpenShift Monitoring"
+    ;;
+
+  openshift-metrics-server)
+    SEARCHSTRING="openshift-metrics-server"
+    TEXTRESPONSE="Open Shift Metrics Server"
+    ;;
+
+  openshift-infra)
+    SEARCHSTRING="openshift-infra"
+    TEXTRESPONSE="OpenShift Infrastructure"
+    ;;
+
+  router)
+    SEARCHSTRING="router"
+    TEXTRESPONSE="Router"
+    ;;
+
+  registry)
+    SEARCHSTRING="registry"
+    TEXTRESPONSE="Registry"
+    ;;
+
+  *)
+    echo "please Pass approrate flag"
+    exit 1
+    ;;
+  esac
+
+  CONTAINERCOUNT=$(oc get pods --all-namespaces   | grep $SEARCHSTRING | wc -l)
+  CONTAINERSREADY=$(oc get pods --all-namespaces   | grep $SEARCHSTRING | grep Running | wc -l)
+  COUNT=0
+  for (( i = 0; i < 5; i++ )); do
+    if [[ $CONTAINERCOUNT -eq $CONTAINERSREADY ]]; then
+      echo "$TEXTRESPONSE Containers are running"
+      break
+    elif [[ $COUNT -eq 4 ]]; then
+      echo "Failed to start $SEARCHSTRING  containers"
+      oc get pods --all-namespaces
+      exit 1
+    else
+      echo "Waiting for $TEXTRESPONSE Containers to start up"
+      sleep 30s
+      CONTAINERCOUNT=$(oc get pods --all-namespaces   | grep $SEARCHSTRING | wc -l)
+      CONTAINERSREADY=$(oc get pods --all-namespaces   | grep $SEARCHSTRING | grep Running | wc -l)
+    fi
+    COUNT=$(($COUNT + 1))
+  done
+
+}
+
 
 function checkreadystate() {
   if [[ $1 = infra ]]; then
@@ -42,9 +103,10 @@ function enablescheduling() {
   SCHEDULECHECK=$(oc get nodes | grep $NODEGROUP | grep SchedulingDisabled | wc -l )
   if [[ $NODECOUNT -eq  0 ]]; then
     echo "$NODEGROUP nodes are set to SchedulingDisabled enabling Sceduling. "
+    oc get nodes
     NODES=$(oc get nodes | grep $NODEGROUP | awk '{print $1}')
     for  n in $NODES ; do
-      oc adm manage-node $n --schedulable=true
+      oc adm manage-node $n --schedulable=true || exit 1
     done
     sleep 5s
   fi

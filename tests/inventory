@@ -5,9 +5,17 @@ master.ocp.example.com
 #options for power_state reboot, halt, running
 power_state="reboot"
 rhel_user="tosin"
+# use for master node endpoint
 master_node="master.ocp.example.com"
+# FQDN names used for power down and power up tasks
 fdqn_node_names=["node4.ocp.example.com","node3.ocp.example.com","node2.ocp.example.com","node1.ocp.example.com"]
 fqdn_compute_names=["node4.ocp.example.com","node3.ocp.example.com"]
+
+# node names used for power up and power down nodes
 node_names=["node1","node2","node3","node4"]
 infra_nodes=["node1","node2"]
-computer_nodes=["node3","node4"]
+compute_nodes=["node3","node4"]
+
+# Uncomment the items below for rebooting nodes playbook takes single node.
+compute_node_single="node4"
+fqdn_compute_node_single="node4.ocp.example.com"

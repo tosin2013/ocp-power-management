@@ -2,13 +2,14 @@
 - name: Powering up master
   shell: virsh start master
   become: yes
+  ignore_errors: true
   delegate_to:  localhost
   when:
     -  power_state == "running"
-- name: Wait 60 seconds, but only start checking after 30 seconds
+- name: Wait 320 seconds, but only start checking after 30 seconds
   wait_for_connection:
     delay: 30
-    timeout: 60
+    timeout: 320
   when:
     - power_state  == "running"
   delegate_to:  "{{ master_node }}"
@@ -17,22 +18,31 @@
   - name: Powering up node
     shell: virsh start {{ item }}
     become: yes
+    ignore_errors: true
     delegate_to:  localhost
     when:
       -  power_state == "running"
     with_items:
       - "{{ infra_nodes }}"
-  - name: Wait 60 seconds, but only start checking after 30 seconds
+  - name: Wait 320 seconds, but only start checking after 30 seconds
     wait_for_connection:
       delay: 30
-      timeout: 60
+      timeout: 320
     when:
       - power_state  == "running"
     delegate_to: "{{ item }}"
     with_items:
       - "{{ infra_nodes }}"
+  - name: Ansible create new file with permissions example.
+    file:
+      path: "/var/log/ocp-power-mnanagement.log"
+      state: touch
+      mode: 0777
+      owner: root
+    become: true
   - name: Run a script only if file.txt exists on the remote node
     script: files/check_system_state.sh infra | tee /var/log/ocp-power-mnanagement.log
+    become: true
     when:
       - power_state  == "running"
 - name: Power up compute nodes "{{ item }}"
@@ -40,15 +50,16 @@
   - name: Powering up node
     shell: virsh start {{ item }}
     become: yes
+    ignore_errors: true
     delegate_to:  localhost
     when:
       -  power_state == "running"
     with_items:
       - "{{ compute_nodes }}"
-  - name: Wait 60 seconds, but only start checking after 30 seconds
+  - name: Wait 320 seconds, but only start checking after 30 seconds
     wait_for_connection:
       delay: 30
-      timeout: 60
+      timeout: 320
     when:
       - power_state  == "running"
     delegate_to: "{{ item }}"
@@ -56,5 +67,6 @@
       - "{{ compute_nodes }}"
   - name: Run a script only if file.txt exists on the remote node
     script: files/check_system_state.sh compute | tee /var/log/ocp-power-mnanagement.log
+    become: true
     when:
       - power_state  == "running"

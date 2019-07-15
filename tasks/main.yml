@@ -1,8 +1,7 @@
 ---
-- name: Manage Node
-  import_tasks: pwoer_down_node.yml
-  when:
-    -  power_state == "halt"
-  import_tasks: power_on_node.yml
-  when:
-    -  power_state == "halt"
+- include_tasks: power_down_node.yml
+  when: power_state == 'halt'
+- include_tasks: restart_nodes.yml
+  when: power_state == 'reboot'
+- include_tasks: power_on_node.yml
+  when: power_state == 'running'
