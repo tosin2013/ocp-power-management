@@ -1,6 +1,6 @@
 # playbook to powerup node
 - name: Powering up master
-  shell: virsh start master
+  command: virsh start master
   become: yes
   ignore_errors: true
   delegate_to:  localhost
@@ -16,7 +16,7 @@
 - name: Power up infra nodes "{{ item }}"
   block:
   - name: Powering up node
-    shell: virsh start {{ item }}
+    command: virsh start {{ item }}
     become: yes
     ignore_errors: true
     delegate_to:  localhost
@@ -48,7 +48,7 @@
 - name: Power up compute nodes "{{ item }}"
   block:
   - name: Powering up node
-    shell: virsh start {{ item }}
+    command: virsh start {{ item }}
     become: yes
     ignore_errors: true
     delegate_to:  localhost

@@ -33,7 +33,7 @@
     with_items:
       - "{{ node_names }}"
   - name: Powering off node
-    shell: virsh shutdown {{ item }}
+    command: virsh shutdown {{ item }}
     become: yes
     delegate_to:  localhost
     when:
