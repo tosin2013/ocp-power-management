@@ -1,2 +1,12 @@
-localhost
+[master]
+master.ocp.example.com
 
+[master:vars]
+#options for power_state reboot, halt, running
+power_state="reboot"
+rhel_user="tosin"
+master_node="master.ocp.example.com"
+fdqn_node_names=["node4.ocp.example.com","node3.ocp.example.com","node2.ocp.example.com","node1.ocp.example.com"]
+node_names=["node1","node2","node3","node4"]
+infra_nodes=["node1","node2"]
+computer_nodes=["node3","node4"]

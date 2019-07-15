@@ -1,33 +1,82 @@
 # Setting the node to NOT schedulable draining the node then restarting
-- name: Setting the {{ node_name }} to NOT schedulable
-  shell: |
-    oc adm manage-node "{{ node_name }}" --schedulable=false
-- name:  
+- name: get variables
+  debug: var=node_names
+- name: Setting {{ item }} to unschedulable
+  block:
+  - name: Setting the {{ item }} to NOT schedulable
     shell: |
-      oc adm drain "{{ node_name }}"
-- name: reboot {{ node_name }}"
-  shell: sleep 2 && shutdown -r now "Restarting node"
-  async: 1
-  poll: 0
-  ignore_errors: true
-  become: true
-  when:
-    - {{ power_state }} == "reboot"
-- name: Wait 60 seconds, but only start checking after 30 seconds
-  wait_for_connection:
-    delay: 30
-    timeout: 60
-  when:
-    - {{ power_state }} == "reboot"
-- name: reboot "{{ node_name }}"
-  shell: sleep 2 && halt "Shutting Down Node"
-  async: 1
-  poll: 0
-  ignore_errors: true
-  become: true
-  when:
-    - {{ power_state }} == "halt"
-- name: Powering off node 
-  shell: virsh shutdown {{ node_name }}
-  become: yes
-  delegate_to: localhost
+      echo "NODE: {{ item }}"
+      oc adm manage-node "{{ item }}" --schedulable=false
+  - name:  Drain Containers running on node
+    shell: |
+      oc adm drain "{{ item }}"
+    ignore_errors: yes
+  with_items:
+    - "{{ fdqn_node_names }}"
+- name: Restarting infra nodes {{ item }}
+  block:
+  - name: reboot {{ node_names }}"
+    shell: sleep 2 && shutdown -r now "Restarting node"
+    async: 1
+    poll: 0
+    ignore_errors: true
+    become: true
+    when:
+      -  power_state  == "reboot"
+    delegate_to: "{{ item }}"
+  - name: Wait 60 seconds, but only start checking after 30 seconds
+    wait_for_connection:
+      delay: 30
+      timeout: 60
+    when:
+      - power_state  == "reboot"
+    delegate_to: "{{ item }}"
+  - name: Run a script only if file.txt exists on the remote node
+    script: /files/check_system_state.sh infra | tee /var/log/ocp-power-mnanagement.log
+    when:
+      - power_state  == "reboot"
+    delegate_to: "{{ item }}"
+  with_items:
+    - "{{ infra_nodes }}"
+  - name: Restarting compute nodes {{ item }}
+    block:
+    - name: reboot {{ node_names }}"
+      shell: sleep 2 && shutdown -r now "Restarting node"
+      async: 1
+      poll: 0
+      ignore_errors: true
+      become: true
+      when:
+        -  power_state  == "reboot"
+    - name: Wait 60 seconds, but only start checking after 30 seconds
+      wait_for_connection:
+        delay: 30
+        timeout: 60
+      when:
+        - power_state  == "reboot"
+      delegate_to: "{{ item }}"
+    - name: Run a script only if file.txt exists on the remote node
+      script: files/check_system_state.sh compute | tee /var/log/ocp-power-mnanagement.log
+      when:
+        - power_state  == "reboot"
+    with_items:
+      - "{{ computer_nodes }}"
+- name: Shutdown "{{ item }}"
+  block:
+  - name: Shuting down  "{{ item }}"
+    shell: sleep 2 && halt "Shutting Down Node"
+    async: 1
+    poll: 0
+    ignore_errors: true
+    become: true
+    when:
+      -  power_state == "halt"
+    delegate_to: "{{ item }}"
+  - name: Powering off node
+    shell: virsh shutdown {{ item }}
+    become: yes
+    delegate_to:  localhost
+    when:
+      -  power_state == "halt"
+  with_items:
+    - "{{ node_names }}"
