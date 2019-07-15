@@ -5,17 +5,17 @@
 - name: Setting {{ fqdn_compute_node_single }} to unschedulable
   block:
   - name: Setting the {{ fqdn_compute_node_single }} to NOT schedulable
-    shell: |
+    command: |
       echo "NODE: {{ fqdn_compute_node_single }}"
       oc adm manage-node "{{ fqdn_compute_node_single }}" --schedulable=false
   - name:  Drain Containers running on node
-    shell: |
+    command: |
       oc adm drain "{{ fqdn_compute_node_single }}" --grace-period=180 --timeout=0
     ignore_errors: yes
 - name: Restarting compute nodes {{ compute_node_single }}
   block:
   - name: "reboot {{ compute_node_single }}"
-    shell: sleep 2 && shutdown -r now "Restarting node"
+    command: sleep 2 && shutdown -r now "Restarting node"
     async: 1
     poll: 0
     ignore_errors: true
