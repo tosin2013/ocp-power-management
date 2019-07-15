@@ -22,7 +22,7 @@
     become: true
     delegate_to: "{{ compute_node_single }}"
     when:
-      -  power_state  == "reboot"
+      - power_state  == "reboot"
   - name: Wait 320 seconds, but only start checking after 180 seconds
     wait_for_connection:
       delay: 180

@@ -5,7 +5,7 @@
   ignore_errors: true
   delegate_to:  localhost
   when:
-    -  power_state == "running"
+    - power_state == "running"
 - name: Wait 320 seconds, but only start checking after 30 seconds
   wait_for_connection:
     delay: 30
@@ -21,7 +21,7 @@
     ignore_errors: true
     delegate_to:  localhost
     when:
-      -  power_state == "running"
+      - power_state == "running"
     with_items:
       - "{{ infra_nodes }}"
   - name: Wait 320 seconds, but only start checking after 30 seconds
@@ -53,7 +53,7 @@
     ignore_errors: true
     delegate_to:  localhost
     when:
-      -  power_state == "running"
+      - power_state == "running"
     with_items:
       - "{{ compute_nodes }}"
   - name: Wait 320 seconds, but only start checking after 30 seconds

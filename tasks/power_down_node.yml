@@ -28,7 +28,7 @@
     ignore_errors: true
     become: true
     when:
-      -  power_state == "halt"
+      - power_state == "halt"
     delegate_to: "{{ item }}"
     with_items:
       - "{{ node_names }}"
@@ -37,6 +37,6 @@
     become: yes
     delegate_to:  localhost
     when:
-      -  power_state == "halt"
+      - power_state == "halt"
     with_items:
       - "{{ node_names }}"
