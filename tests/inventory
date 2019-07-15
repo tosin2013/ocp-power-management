@@ -4,7 +4,7 @@ master.ocp.example.com
 [master:vars]
 #options for power_state reboot, halt, running
 power_state="reboot"
-rhel_user="tosin"
+rhel_user="exampleuser"
 # use for master node endpoint
 master_node="master.ocp.example.com"
 # FQDN names used for power down and power up tasks
