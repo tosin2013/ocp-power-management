@@ -9,6 +9,7 @@ rhel_user="exampleuser"
 master_node="master.ocp.example.com"
 # FQDN names used for power down and power up tasks
 fdqn_node_names=["node4.ocp.example.com","node3.ocp.example.com","node2.ocp.example.com","node1.ocp.example.com"]
+fqdn_infra_names=["node1.ocp.example.com","node2.ocp.example.com"]
 fqdn_compute_names=["node4.ocp.example.com","node3.ocp.example.com"]
 
 # node names used for power up and power down nodes

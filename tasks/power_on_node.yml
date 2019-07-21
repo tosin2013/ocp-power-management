@@ -32,7 +32,7 @@
       - power_state  == "running"
     delegate_to: "{{ item }}"
     with_items:
-      - "{{ infra_nodes }}"
+      - "{{ fqdn_infra_names }}"
   - name: Create ocp-power-mnanagement.log file.
     file:
       path: "/var/log/ocp-power-mnanagement.log"
@@ -64,7 +64,7 @@
       - power_state  == "running"
     delegate_to: "{{ item }}"
     with_items:
-      - "{{ compute_nodes }}"
+      - "{{ fqdn_compute_names }}"
   - name: Run script check_system_state.sh the remote node
     script: files/check_system_state.sh compute | tee /var/log/ocp-power-mnanagement.log
     become: true
