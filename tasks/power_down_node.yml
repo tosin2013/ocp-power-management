@@ -18,7 +18,7 @@
       - "{{ fqdn_compute_names }}"
   rescue:
     - debug:
-        msg: 'I caught an error, can do stuff here to fix it, :-)'
+        msg: 'There was an issue with draining containers skipping.'
 - name: Shutdown "{{ item }}"
   block:
   - name: Shuting down  {{ item }}
@@ -31,7 +31,7 @@
       - power_state == "halt"
     delegate_to: "{{ item }}"
     with_items:
-      - "{{ node_names }}"
+      - "{{ fdqn_node_names }}"
   - name: Powering off node
     command: virsh shutdown {{ item }}
     become: yes
