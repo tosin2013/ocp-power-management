@@ -31,6 +31,6 @@
       - power_state  == "reboot"
     delegate_to: "{{ compute_node_single }}"
   - name: Run script check_system_state.sh the remote node
-    script: files/check_system_state.sh both | tee /var/log/ocp-power-mnanagement.log
+    script: files/check_system_state.sh both | tee /var/log/ocp-power-management.log
     when:
       - power_state  == "reboot"
