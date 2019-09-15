@@ -3,3 +3,5 @@
 power_state: "{{ power_state }}"
 rhel_user: "{{ rhel_user }}"
 master_node: "{{ master_node }}"
+master_name: "{{ master_name }}"
+runas_sudo: false

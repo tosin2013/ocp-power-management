@@ -1,6 +1,12 @@
 # playbook to powerup node
+- set_fact:
+    run_virsh_as_sudo: sudo
+  when: runas_sudo
+- set_fact:
+    run_virsh_as_sudo: ""
+  when: not runas_sudo
 - name: Powering up master
-  command: virsh start master
+  command: "{{ run_virsh_as_sudo }} virsh start {{ master_name }}"
   become: yes
   ignore_errors: true
   delegate_to:  localhost
@@ -16,7 +22,7 @@
 - name: Power up infra nodes "{{ item }}"
   block:
   - name: Powering up node
-    command: virsh start {{ item }}
+    command: "{{ run_virsh_as_sudo }} virsh start {{ item }}"
     become: yes
     ignore_errors: true
     delegate_to:  localhost
@@ -48,7 +54,7 @@
 - name: Power up compute nodes "{{ item }}"
   block:
   - name: Powering up node
-    command: virsh start {{ item }}
+    command: "{{ run_virsh_as_sudo }} virsh start {{ item }}"
     become: yes
     ignore_errors: true
     delegate_to: localhost

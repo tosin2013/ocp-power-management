@@ -2,6 +2,14 @@
 - name: get variables
   debug: var=node_names
 
+- set_fact:
+    run_virsh_as_sudo: sudo
+  when: runas_sudo
+
+- set_fact:
+    run_virsh_as_sudo: ""
+  when: not runas_sudo
+
 - name: Setting {{ item }} to unschedulable
   block:
   - name: Setting the {{ item }} to NOT schedulable
@@ -33,7 +41,7 @@
     with_items:
       - "{{ fdqn_node_names }}"
   - name: Powering off node
-    command: virsh shutdown {{ item }}
+    command: "{{ run_virsh_as_sudo }} virsh shutdown {{ item }}"
     become: yes
     delegate_to:  localhost
     when:
