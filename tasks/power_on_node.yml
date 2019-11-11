@@ -1,78 +1,143 @@
 # playbook to powerup node
-- set_fact:
-    run_virsh_as_sudo: sudo
-  when: runas_sudo
-- set_fact:
-    run_virsh_as_sudo: ""
-  when: not runas_sudo
-- name: Powering up master
-  command: "{{ run_virsh_as_sudo }} virsh start {{ master_name }}"
+---
+- name: Get a list of all instances
+  virt:
+    command: list_vms
+    state: running
+  register: all_instances
   become: yes
-  ignore_errors: true
+  delegate_to: localhost
+
+- name: Create ocp-power-management.log file
+  copy:
+    content: ""
+    dest: "/var/log/ocp-power-management.log"
+    force: no
+    mode: 0755
+    owner: root
+  when: master_name in all_instances.list_vms
+
+- name: starting up {{ master_name }}
+  shell: |
+    result=$(virsh dominfo --domain {{ master_name }}| awk '/State/ {print $2}')
+    if [ $result == 'running' ];
+    then
+       echo "running"
+    else
+      virsh start {{ master_name }};
+    fi
+  register: vm_startup_status
+  until: vm_startup_status.stdout.find('running') != -1
+  retries: 18
+  delay: 3
   delegate_to:  localhost
-  when:
-    - power_state == "running"
-- name: Wait 320 seconds, but only start checking after 30 seconds
-  wait_for_connection:
-    delay: 30
-    timeout: 320
-  when:
-    - power_state  == "running"
-  delegate_to:  "{{ master_node }}"
-- name: Power up infra nodes "{{ item }}"
-  block:
-  - name: Powering up node
-    command: "{{ run_virsh_as_sudo }} virsh start {{ item }}"
-    become: yes
-    ignore_errors: true
-    delegate_to:  localhost
-    when:
-      - power_state == "running"
-    with_items:
-      - "{{ infra_nodes }}"
-  - name: Wait 320 seconds, but only start checking after 30 seconds
-    wait_for_connection:
-      delay: 30
-      timeout: 320
-    when:
-      - power_state  == "running"
-    delegate_to: "{{ item }}"
-    with_items:
-      - "{{ fqdn_infra_names }}"
-  - name: Create ocp-power-management.log file.
-    file:
-      path: "/var/log/ocp-power-management.log"
-      state: touch
-      mode: 0777
-      owner: root
-    become: true
-  - name: Run script check_system_state.sh the remote node
-    script: files/check_system_state.sh infra | tee /var/log/ocp-power-management.log
-    become: true
-    when:
-      - power_state  == "running"
-- name: Power up compute nodes "{{ item }}"
-  block:
-  - name: Powering up node
-    command: "{{ run_virsh_as_sudo }} virsh start {{ item }}"
-    become: yes
-    ignore_errors: true
-    delegate_to: localhost
-    when:
-      - power_state == "running"
-    with_items:
-      - "{{ compute_nodes }}"
-  - name: Wait 320 seconds, but only start checking after 30 seconds
-    wait_for_connection:
-      delay: 30
-      timeout: 320
-    when:
-      - power_state  == "running"
-    delegate_to: "{{ item }}"
-    with_items:
-      - "{{ fqdn_compute_names }}"
-  - name: Run script check_system_state.sh the remote node
-    script: files/check_system_state.sh compute | tee /var/log/ocp-power-management.log
-    become: true
-    when:
-      - power_state  == "running"
+  when: master_name not in all_instances.list_vms
+
+- name: Wait for network connectivty to {{ master_name }}
+  local_action:
+    module: wait_for
+      host="{{ master_name }}.{{ domain }}"
+      port=22
+      delay=10
+      timeout=320
+  when: master_name not in all_instances.list_vms
+
+- name: wait for {{ master_name }} web console to come up
+  uri:
+    url: "https://{{ master_name }}.{{ domain }}:8443"
+    follow_redirects: none
+    method: GET
+  register: web_console
+  until: web_console.status == 200
+  retries: 60
+  delay: 5 # Every 5 seconds  
+
+- name: Get a list of all instances
+  virt:
+    command: list_vms
+    state: running
+  register: all_instances
+  become: yes
+  delegate_to: localhost
+
+- name: starting up infra nodes
+  shell: |
+    result=$(virsh dominfo --domain {{ item }}| awk '/State/ {print $2}')
+    if [ $result == 'running' ];
+    then
+       echo "running"
+    else
+      virsh start {{ item }};
+    fi
+  register: vm_startup_status
+  until: vm_startup_status.stdout.find('running') != -1
+  retries: 18
+  delay: 3
+  delegate_to:  localhost
+  loop: "{{ infra_nodes }}"
+  loop_control:
+    label: "starting up {{ item }}"
+  when: item not in all_instances.list_vms and master_name in all_instances.list_vms
+
+- name: ensure connectivity to infra nodes
+  local_action:
+    module: wait_for
+      host="{{ item }}.{{ domain }}"
+      port=22
+      delay=10
+      timeout=320
+  register: infra_nodes_started
+  loop: "{{ infra_nodes }}"
+  loop_control:
+    label: "waiting for ssh connection to {{ item }}"
+  when: item not in all_instances.list_vms and master_name in all_instances.list_vms
+
+- name: check infra nodes states
+  script: files/check_system_state.sh infra | tee /var/log/ocp-power-management.log
+  register: check_infra_state
+  when: master_name in all_instances.list_vms
+
+- debug:
+    var: check_infra_state
+  when: master_name in all_instances.list_vms
+
+- name: starting compute nodes
+  shell: |
+    result=$(virsh dominfo --domain {{ item }}| awk '/State/ {print $2}')
+    if [ $result == 'running' ];
+    then
+       echo "running"
+    else
+      virsh start {{ item }};
+    fi
+  register: vm_startup_status
+  until: vm_startup_status.stdout.find('running') != -1
+  retries: 18
+  delay: 3
+  delegate_to:  localhost
+  loop: "{{ compute_nodes }}"
+  loop_control:
+    label: "starting {{ item }}"
+  when: item not in all_instances.list_vms and master_name in all_instances.list_vms
+
+- name: ensure connectivity to compute nodes
+  local_action:
+    module: wait_for
+      host="{{ item }}.{{ domain }}"
+      port=22
+      delay=10
+      timeout=320
+  register: compute_nodes_started
+  loop: "{{ compute_nodes }}"
+  loop_control:
+    label: "waiting for ssh connection to {{ item }}"
+  when: item not in all_instances.list_vms and master_name in all_instances.list_vms
+
+- name: check compute nodes state
+  script: files/check_system_state.sh compute | tee /var/log/ocp-power-management.log
+  register: check_compute_state
+  when: master_name in all_instances.list_vms
+
+- debug:
+    var: check_compute_state
+  when: master_name in all_instances.list_vms
